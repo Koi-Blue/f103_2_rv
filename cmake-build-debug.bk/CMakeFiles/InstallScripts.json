@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/code_projects/stm32_projects/f103/stm32Demo/stm32Demo/cmake-build-debug/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
