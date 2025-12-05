@@ -73,8 +73,8 @@ file(GLOB_RECURSE SOURCES "startup/*.*" "user/*.*" STM32F10x_FWLib/*.* FreeRTOS/
 
 # 设置链接脚本路径
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F103C8Tx_FLASH.ld
-        ${CMAKE_SOURCE_DIR}/hardware/motor_control.cpp
-        ${CMAKE_SOURCE_DIR}/hardware/motor_control.h)
+        ${CMAKE_SOURCE_DIR}/user/motor_control/motor_control.cpp
+        ${CMAKE_SOURCE_DIR}/user/motor_control/motor_control.h)
 # 添加链接选项，包括链接脚本和其他选项
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m3 -mthumb -mthumb-interwork)
