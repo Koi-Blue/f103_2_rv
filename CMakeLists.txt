@@ -67,9 +67,9 @@ endif ()
 add_definitions(-DUSE_HAL_DRIVER -DSTM32F103xB -DUSE_STDPERIPH_DRIVER -DSTM32F10X_HD)
 
 # 链接源文件 # 配置头文件搜索路径
-include_directories(user/inc STM32F10x_FWLib/inc FreeRTOS/port/GCC/ARM_CM3 FreeRTOS/include hardware/inc startup)
+include_directories(user/inc STM32F10x_FWLib/inc FreeRTOS/include FreeRTOS/portable/GCC/ARM_CM3 hardware/inc startup)
 # 文件 # 设置源文件列表
-file(GLOB_RECURSE SOURCES "startup/*.*" "user/*.*" STM32F10x_FWLib/*.* FreeRTOS/src/*.* FreeRTOS/port/MemMang/*.* FreeRTOS/port/GCC/ARM_CM3/*.* "hardware/*.*")
+file(GLOB_RECURSE SOURCES "startup/*.*" "user/*.*" STM32F10x_FWLib/*.* FreeRTOS/*.* FreeRTOS/portable/MemMang/*.* FreeRTOS/portable/GCC/ARM_CM3/*.* "hardware/*.*")
 ###
 # 设置链接脚本路径
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F103C8Tx_FLASH.ld
