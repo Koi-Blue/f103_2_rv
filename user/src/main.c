@@ -27,6 +27,7 @@
 #include "FreeRTOS.h"
 #include "portmacro.h"
 #include "task.h"
+#include "semphr.h"
 
 #ifdef USE_STM32100B_EVAL
  #include "stm32100b_eval_lcd.h"
@@ -85,29 +86,107 @@
 #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
 
-/* Private functions ---------------------------------------------------------*/
+
+
+#define ONE_LED 0
+#if ONE_LED
+static volatile uint8_t is_led = 0;
+static SemaphoreHandle_t xMutex_IsLed = NULL;
 
 void vTask_led(void *pvParameters) {
-  // 任务循环（FreeRTOS 任务通常是无限循环，除非主动删除）
+
   for (;;) {
-    GPIO_SetBits(GPIOC, GPIO_Pin_13);
-    Delay_s(1);
-    GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-    Delay_s(1);
-    GPIO_SetBits(GPIOC, GPIO_Pin_13);
+
+    if (xSemaphoreTake(xMutex_IsLed, pdMS_TO_TICKS(10)) == pdTRUE) {
+
+      if (!is_led) {
+        GPIO_ResetBits(GPIOC, GPIO_Pin_13);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        is_led = 1;
+      }
+
+      xSemaphoreGive(xMutex_IsLed);
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(10));
   }
 }
+
 void vTask_led_2(void *pvParameters) {
   // 任务循环（FreeRTOS 任务通常是无限循环，除非主动删除）
   for (;;) {
-    GPIO_SetBits(GPIOC, GPIO_Pin_13);
-    Delay_s(1);
-    GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-    Delay_s(1);
-    GPIO_SetBits(GPIOC, GPIO_Pin_13);
+    // 1. 获取互斥信号量（阻塞等待，最多等10ms）
+    if (xSemaphoreTake(xMutex_IsLed, pdMS_TO_TICKS(10)) == pdTRUE) {
+      // 临界区：操作共享变量is_led
+      if (is_led) {
+        GPIO_SetBits(GPIOC, GPIO_Pin_13);    // LED亮
+        vTaskDelay(pdMS_TO_TICKS(500));      // 延时期间释放CPU
+        is_led = 0;                          // 修改共享变量
+      }
+      // 2. 释放互斥信号量
+      xSemaphoreGive(xMutex_IsLed);
+    }
+    // 短延时，避免空循环占用CPU
+    vTaskDelay(pdMS_TO_TICKS(10));
+  }
+}
+#else
+void vTask_led1(void *pvParameters) {
+  uint8_t led_idx = 0;
+  uint16_t led_pins[] = {GPIO_Pin_0, GPIO_Pin_1, GPIO_Pin_2, GPIO_Pin_3};
+  uint8_t pin_num = sizeof(led_pins)/sizeof(led_pins[0]);
+
+  while (1) {
+
+    GPIO_ResetBits(GPIOA, GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3);
+    // vTaskDelay(pdMS_TO_TICKS(500));
+    // Delay_ms(500);
+    // GPIO_SetBits(GPIOA, led_pins[led_idx]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOA, led_pins[0]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOA, led_pins[1]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOA, led_pins[2]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOA, led_pins[3]);
+
+    // Delay_ms(500);
+
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    led_idx = (led_idx + 1) % pin_num;
   }
 }
 
+
+void vTask_led2(void *pvParameters) {
+  uint8_t led_idx = 0;
+  uint16_t led_pins[] = {GPIO_Pin_3, GPIO_Pin_4, GPIO_Pin_5, GPIO_Pin_6};
+  uint8_t pin_num = sizeof(led_pins)/sizeof(led_pins[0]);
+
+  while (1) {
+
+    GPIO_ResetBits(GPIOB, GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6);
+    // vTaskDelay(pdMS_TO_TICKS(500));
+    // // Delay_ms(500);
+    // GPIO_SetBits(GPIOB, led_pins[led_idx]);
+    // Delay_ms(500);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOB, led_pins[0]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOB, led_pins[1]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOB, led_pins[2]);
+    Delay_ms(500);
+    GPIO_SetBits(GPIOB, led_pins[3]);
+    vTaskDelay(pdMS_TO_TICKS(500));
+
+    led_idx = (led_idx + 1) % pin_num;
+  }
+}
+
+#endif
 /**
   * @brief  Main program.
   * @param  None
@@ -115,35 +194,46 @@ void vTask_led_2(void *pvParameters) {
   */
 int main(void)
 {
-  /*!< At this stage the microcontroller clock setting is already configured,
-       this is done through SystemInit() function which is called from startup
-       file (startup_stm32f10x_xx.s) before to branch to application main.
-       To reconfigure the default setting of SystemInit() function, refer to
-       system_stm32f10x.c file
-     */
 
-  /* Add your application code here
-     */
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB, ENABLE);
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
-  GPIO_SetBits(GPIOC, GPIO_Pin_13);
-  // GPIO_ResetBits(GPIOC, GPIO_Pin_13);
-  /* Infinite loop */
-  static uint8_t is_led = 0;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_SetBits(GPIOA, GPIO_Pin_0|GPIO_Pin_1|GPIO_Pin_2|GPIO_Pin_3);
+
+  GPIO_InitTypeDef GPIO_InitStructure_1;
+  GPIO_InitStructure_1.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_InitStructure_1.GPIO_Pin = GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6;
+  GPIO_InitStructure_1.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(GPIOB, &GPIO_InitStructure_1);
+  GPIO_SetBits(GPIOB, GPIO_Pin_3|GPIO_Pin_4|GPIO_Pin_5|GPIO_Pin_6);
+
+
+  // xMutex_IsLed = xSemaphoreCreateMutex();
+  //
+  // if (xMutex_IsLed == NULL) {
+  //
+  //   while(1);
+  // }
+
+  // 3. 创建任务
   TaskHandle_t is_led_task = NULL;
   TaskHandle_t is_led_task_2 = NULL;
-  BaseType_t xReturn1 = xTaskCreate(vTask_led, "task_led", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task);
-  BaseType_t xReturn2 = xTaskCreate(vTask_led_2, "Task_led_2", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task_2);
-  if(pdPASS == xReturn1 && pdPASS == xReturn2)
+
+  BaseType_t xReturn1 = xTaskCreate(vTask_led1, "task_led", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task);
+  BaseType_t xReturn2 = xTaskCreate(vTask_led2, "Task_led_2", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task_2);
+
+  // 4. 启动调度器
+  if(pdPASS == xReturn1 && pdPASS == xReturn2) {
+  // if(pdPASS == xReturn2) {
     vTaskStartScheduler();   /* 启动任务，开启调度 */
 
-  while (1)
-  {
+  }
 
+  // 如果调度器启动失败，进入死循环
+  while (1) {
   }
 }
 

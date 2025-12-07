@@ -22,6 +22,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "../inc/stm32f10x_it.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -131,8 +133,13 @@ void DebugMon_Handler(void)
   * @param  None
   * @retval None
   */
+extern BaseType_t xSchedulerRunning;
+extern void xPortSysTickHandler( void );
 void SysTick_Handler(void)
 {
+  if (xSchedulerRunning == pdTRUE) {
+    xPortSysTickHandler();
+  }
 }
 
 /******************************************************************************/
