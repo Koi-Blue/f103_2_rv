@@ -1,5 +1,4 @@
 # f103_2_rv
 f103 to rv1103, by rtos
 * 调整 main
-* Lyt 加入测试
-* LL
+* 适配 rtos
