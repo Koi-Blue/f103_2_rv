@@ -1,6 +1,6 @@
 /**
   ******************************************************************************
-  * @file    Project/STM32F10x_StdPeriph_Template/main.c 
+  * @file    Project/STM32F10x_StdPeriph_Template/main.c
   * @author  MCD Application Team
   * @version V3.6.0
   * @date    20-September-2021
@@ -34,7 +34,7 @@
 #elif defined USE_STM3210B_EVAL
  #include "stm3210b_eval_lcd.h"
 #elif defined USE_STM3210E_EVAL
- #include "stm3210e_eval_lcd.h" 
+ #include "stm3210e_eval_lcd.h"
 #elif defined USE_STM3210C_EVAL
  #include "stm3210c_eval_lcd.h"
 #elif defined USE_STM32100E_EVAL
@@ -48,29 +48,29 @@
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
 #ifdef USE_STM32100B_EVAL
-  #define MESSAGE1   "STM32 MD Value Line " 
-  #define MESSAGE2   " Device running on  " 
-  #define MESSAGE3   "  STM32100B-EVAL    " 
+  #define MESSAGE1   "STM32 MD Value Line "
+  #define MESSAGE2   " Device running on  "
+  #define MESSAGE3   "  STM32100B-EVAL    "
 #elif defined (USE_STM3210B_EVAL)
-  #define MESSAGE1   "STM32 Medium Density" 
-  #define MESSAGE2   " Device running on  " 
-  #define MESSAGE3   "   STM3210B-EVAL    " 
+  #define MESSAGE1   "STM32 Medium Density"
+  #define MESSAGE2   " Device running on  "
+  #define MESSAGE3   "   STM3210B-EVAL    "
 #elif defined (STM32F10X_XL) && defined (USE_STM3210E_EVAL)
-  #define MESSAGE1   "  STM32 XL Density  " 
-  #define MESSAGE2   " Device running on  " 
+  #define MESSAGE1   "  STM32 XL Density  "
+  #define MESSAGE2   " Device running on  "
   #define MESSAGE3   "   STM3210E-EVAL    "
 #elif defined (USE_STM3210E_EVAL)
-  #define MESSAGE1   " STM32 High Density " 
-  #define MESSAGE2   " Device running on  " 
-  #define MESSAGE3   "   STM3210E-EVAL    " 
+  #define MESSAGE1   " STM32 High Density "
+  #define MESSAGE2   " Device running on  "
+  #define MESSAGE3   "   STM3210E-EVAL    "
 #elif defined (USE_STM3210C_EVAL)
-  #define MESSAGE1   " STM32 Connectivity " 
-  #define MESSAGE2   " Line Device running" 
+  #define MESSAGE1   " STM32 Connectivity "
+  #define MESSAGE2   " Line Device running"
   #define MESSAGE3   " on STM3210C-EVAL   "
 #elif defined (USE_STM32100E_EVAL)
-  #define MESSAGE1   "STM32 HD Value Line " 
-  #define MESSAGE2   " Device running on  " 
-  #define MESSAGE3   "  STM32100E-EVAL    "   
+  #define MESSAGE1   "STM32 HD Value Line "
+  #define MESSAGE2   " Device running on  "
+  #define MESSAGE3   "  STM32100E-EVAL    "
 #endif
 
 /* Private macro -------------------------------------------------------------*/
@@ -154,6 +154,7 @@ void vTask_led1(void *pvParameters) {
     // Delay_ms(500);
 
     vTaskDelay(pdMS_TO_TICKS(500));
+    // xTaskResumeAll();
 
     led_idx = (led_idx + 1) % pin_num;
   }
@@ -181,10 +182,21 @@ void vTask_led2(void *pvParameters) {
     Delay_ms(500);
     GPIO_SetBits(GPIOB, led_pins[3]);
     vTaskDelay(pdMS_TO_TICKS(500));
+    // xTaskResumeAll();
 
     led_idx = (led_idx + 1) % pin_num;
   }
 }
+
+// void vTask_resume(void *pvParameters) {
+//   while (1) {
+//     vTaskSuspendAll();
+//     xTaskResumeAll();
+//     mtCOVERAGE_TEST_MARKER();
+//     vTaskDelay(pdMS_TO_TICKS(100));
+//   }
+//
+// }
 
 #endif
 /**
@@ -195,6 +207,7 @@ void vTask_led2(void *pvParameters) {
 int main(void)
 {
 
+  NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA|RCC_APB2Periph_GPIOB, ENABLE);
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
@@ -221,9 +234,11 @@ int main(void)
   // 3. 创建任务
   TaskHandle_t is_led_task = NULL;
   TaskHandle_t is_led_task_2 = NULL;
+  // TaskHandle_t resume_task = NULL;
 
-  BaseType_t xReturn1 = xTaskCreate(vTask_led1, "task_led", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task);
-  BaseType_t xReturn2 = xTaskCreate(vTask_led2, "Task_led_2", 256, NULL, tskIDLE_PRIORITY + 1, &is_led_task_2);
+  BaseType_t xReturn1 = xTaskCreate(vTask_led1, "task_led", 256, NULL, tskIDLE_PRIORITY + 4, &is_led_task);
+  BaseType_t xReturn2 = xTaskCreate(vTask_led2, "Task_led_2", 256, NULL, tskIDLE_PRIORITY + 4, &is_led_task_2);
+  // BaseType_t xReturn3 = xTaskCreate(vTask_resume, "vTask_resume", 256, NULL, tskIDLE_PRIORITY + 2, &resume_task);
 
   // 4. 启动调度器
   if(pdPASS == xReturn1 && pdPASS == xReturn2) {
@@ -265,7 +280,7 @@ PUTCHAR_PROTOTYPE
   * @retval None
   */
 void assert_failed(uint8_t* file, uint32_t line)
-{ 
+{
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
 

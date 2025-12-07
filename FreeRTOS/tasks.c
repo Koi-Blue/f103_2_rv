@@ -2479,7 +2479,8 @@ static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
                  * executing task. */
                 prvAddCurrentTaskToDelayedList( xTicksToDelay, pdFALSE );
             }
-            xAlreadyYielded = xTaskResumeAll();
+            xAlreadyYielded = xTaskResumeAll(); // SiJY
+
         }
         else
         {
@@ -2488,6 +2489,7 @@ static void prvInitialiseNewTask( TaskFunction_t pxTaskCode,
 
         /* Force a reschedule if xTaskResumeAll has not already done so, we may
          * have put ourselves to sleep. */
+        // mtCOVERAGE_TEST_MARKER(); // SiJY ++
         if( xAlreadyYielded == pdFALSE )
         {
             taskYIELD_WITHIN_API();
